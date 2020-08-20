@@ -19,44 +19,43 @@ app.ports.request.subscribe((message) => {
     var body_message = null;
 
     if (message.msg == "NODE_CLICKED") {
-        if (startAndEndPoints.length == 0) {
-        // is entry point
-            if (!checkIfStartingPointValid(message.body)) {
-                console.log('not valid starting point')
-                msg = "INVALID_START_NODE";
-                body_message = "Not a valid starting position."
-            } else {
-                msg = "VALID_START_NODE";
-                startAndEndPoints.push(message.body);
-                body_message = "Select a second node to complete the line.";
-            }
-
-        } else {
-        // is second point
-            startAndEndPoints.push(message.body);
-            if (checkIfLineValid(startAndEndPoints)) {
-                arrOfPointsUsed.push(startAndEndPoints);
-                msg = "VALID_END_NODE";
-                body_newLine = {
-                    "start": startAndEndPoints[0],
-                    "end": startAndEndPoints[1]
-                };
-                startAndEndPoints = [];
-                if (body_heading == "Player 1") {
-                    body_heading = "Player 2";
+            if (startAndEndPoints.length == 0) {
+                // is entry point
+                if (!checkIfStartingPointValid(message.body)) {
+                    console.log('not valid starting point')
+                    msg = "INVALID_START_NODE";
+                    body_message = "Not a valid starting position."
                 } else {
-                    body_heading = "Player 1";
+                    msg = "VALID_START_NODE";
+                    startAndEndPoints.push(message.body);
+                    body_message = "Select a second node to complete the line.";
                 }
+
             } else {
-                if (checkIfGameOver(message.body)) {
-                    msg = "GAME_OVER";
-                    body_message = body_heading + " Wins!";
+                // is second point
+                startAndEndPoints.push(message.body);
+                if (checkIfLineValid(startAndEndPoints)) {
+                    arrOfPointsUsed.push(startAndEndPoints);
+                    msg = "VALID_END_NODE";
+                    body_newLine = {
+                        "start": startAndEndPoints[0],
+                        "end": startAndEndPoints[1]
+                    };
+                    startAndEndPoints = [];
+                    if (body_heading == "Player 1") {
+                        body_heading = "Player 2";
+                    } else {
+                        body_heading = "Player 1";
+                    }
                 } else {
                     startAndEndPoints = [];
                     msg = "INVALID_END_NODE";
                     body_message = "Invalid move!";
                 }
-            }
+                if (checkIfGameOver(message.body)) {
+                    msg = "GAME_OVER";
+                    body_message = body_heading + " Wins!";
+                }
         }
         app.ports.response.send({
             "msg": msg,
@@ -139,6 +138,10 @@ function checkIfLineValid(twoPoints) {
     //return false;
 }
 
+function removeDuplicates(arr) {
+    return arr.filter((v, i, a) => a.findIndex(t => (JSON.stringify(t) === JSON.stringify(v))) === i);
+}
+
 function checkIfGameOver(points) {
     //check if 3 points up down right or left are activated
     var pointUp = { "x": points.x, "y": points.y - 1 },
@@ -146,22 +149,22 @@ function checkIfGameOver(points) {
         pointDown = { "x": points.x, "y": points.y + 1 },
         pointLeft = { "x": points.x - 1, "y": points.y },
         countSurroundingPoints = 0,
-        flatArrOfPointsUsed = arrOfPointsUsed.flat();
+        flatArrOfPointsUsed = arrOfPointsUsed.flat(),
+        duplicatesRemovedPointsArr = removeDuplicates(flatArrOfPointsUsed);
 
-    for (var i = 0; i < flatArrOfPointsUsed.length; i++) {
-        if (flatArrOfPointsUsed[i].x == pointUp.x && flatArrOfPointsUsed[i].y == pointUp.y) {
+    for (var i = 0; i < duplicatesRemovedPointsArr.length; i++) {
+        if (duplicatesRemovedPointsArr[i].x == pointUp.x && duplicatesRemovedPointsArr[i].y == pointUp.y) {
             countSurroundingPoints++;
         }
-        if (flatArrOfPointsUsed[i].x == pointRight.x && flatArrOfPointsUsed[i].y == pointRight.y) {
+        if (duplicatesRemovedPointsArr[i].x == pointRight.x && duplicatesRemovedPointsArr[i].y == pointRight.y) {
             countSurroundingPoints++;
         }
-        if (flatArrOfPointsUsed[i].x == pointDown.x && flatArrOfPointsUsed[i].y == pointDown.y) {
+        if (duplicatesRemovedPointsArr[i].x == pointDown.x && duplicatesRemovedPointsArr[i].y == pointDown.y) {
             countSurroundingPoints++;
         }
-        if (flatArrOfPointsUsed[i].x == pointLeft.x && flatArrOfPointsUsed[i].y == pointLeft.y) {
+        if (duplicatesRemovedPointsArr[i].x == pointLeft.x && duplicatesRemovedPointsArr[i].y == pointLeft.y) {
             countSurroundingPoints++;
         }
-        console.log(countSurroundingPoints)
         if (countSurroundingPoints >= 3) {
             return true;
         }
